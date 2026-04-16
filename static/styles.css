@@ -248,11 +248,18 @@ h2 {
   gap: 22px;
 }
 
+.form-card {
+  display: flex;
+  flex-direction: column;
+}
+
 .assessment-form {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px 16px;
   margin-top: 22px;
+  flex: 1;
+  align-content: start;
 }
 
 .assessment-form label {
@@ -292,9 +299,13 @@ h2 {
   gap: 12px;
 }
 
+.action-row {
+  margin-top: 10px;
+}
+
 .form-note {
   grid-column: 1 / -1;
-  margin-top: 18px;
+  margin-top: 90px;
   padding: 16px 18px;
   border-radius: 22px;
   background: rgba(255, 245, 228, 0.82);
@@ -559,6 +570,10 @@ tbody tr:hover {
 
   .assessment-form {
     grid-template-columns: 1fr;
+  }
+
+  .form-note {
+    margin-top: 40px;
   }
 
   .toolbar {
