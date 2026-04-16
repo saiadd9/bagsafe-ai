@@ -194,6 +194,12 @@
             </div>
             <div class="toolbar">
               <input id="searchInput" type="search" placeholder="Search passenger, flight, tag, or risk..." />
+              <select id="riskFilter" aria-label="Filter by risk level">
+                <option value="all">All risk levels</option>
+                <option value="high">High risk</option>
+                <option value="medium">Medium risk</option>
+                <option value="low">Low risk</option>
+              </select>
               <button id="clearRecordsBtn" class="ghost-btn" type="button">Clear all</button>
             </div>
           </div>
@@ -219,6 +225,7 @@
       </main>
     </div>
 
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
   </body>
 </html>

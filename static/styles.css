@@ -265,6 +265,7 @@ h2 {
 
 .assessment-form input,
 .assessment-form select,
+.toolbar select,
 .toolbar input {
   width: 100%;
   padding: 14px 16px;
@@ -277,6 +278,7 @@ h2 {
 
 .assessment-form input:focus,
 .assessment-form select:focus,
+.toolbar select:focus,
 .toolbar input:focus {
   border-color: var(--rose);
   box-shadow: 0 0 0 4px rgba(238, 105, 131, 0.2);
@@ -383,6 +385,16 @@ h2 {
   color: var(--burgundy);
 }
 
+.result-card h2 {
+  line-height: 1.05;
+  margin-bottom: 10px;
+}
+
+.score-line {
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
 .recommendation-list,
 .feature-stack {
   display: grid;
@@ -452,6 +464,22 @@ tbody tr:hover {
   background: rgba(238, 105, 131, 0.12);
 }
 
+.empty-row td,
+.status-row td {
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.status-row td {
+  font-weight: 700;
+}
+
+.status-row.is-error td {
+  color: var(--burgundy);
+  background: rgba(255, 196, 196, 0.2);
+}
+
 .row-actions {
   display: flex;
   flex-wrap: wrap;
@@ -469,4 +497,92 @@ tbody tr:hover {
 
 .table-action-btn.is-danger {
   background: rgba(255, 196, 196, 0.38);
+}
+
+.toast-container {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 30;
+  display: grid;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  min-width: min(320px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 245, 228, 0.96);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  transform: translateY(0);
+  opacity: 1;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast.is-success {
+  border-color: rgba(133, 14, 53, 0.24);
+}
+
+.toast.is-error {
+  background: rgba(255, 196, 196, 0.92);
+  color: var(--burgundy);
+}
+
+.toast.is-hiding {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+@media (max-width: 900px) {
+  .content-grid,
+  .hero-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-layout {
+    width: min(100%, calc(100% - 20px));
+    padding: 18px 0 28px;
+  }
+
+  .hero-card,
+  .records-card,
+  .form-card,
+  .result-card,
+  .insight-card {
+    padding: 22px;
+  }
+
+  .assessment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    width: 100%;
+  }
+
+  .toolbar input,
+  .toolbar select,
+  .toolbar button {
+    width: 100%;
+  }
+
+  table {
+    min-width: 980px;
+  }
+
+  th,
+  td {
+    padding: 14px 12px;
+    white-space: nowrap;
+  }
+
+  td:first-child,
+  td:last-child {
+    white-space: normal;
+  }
 }

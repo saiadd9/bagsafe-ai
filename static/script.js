@@ -3,8 +3,10 @@ const fillSampleBtn = document.getElementById("fillSampleBtn");
 const clearBtn = document.getElementById("clearBtn");
 const clearRecordsBtn = document.getElementById("clearRecordsBtn");
 const searchInput = document.getElementById("searchInput");
+const riskFilter = document.getElementById("riskFilter");
 const recordsTableBody = document.getElementById("recordsTableBody");
 const submitBtn = form.querySelector('button[type="submit"]');
+const toastContainer = document.getElementById("toastContainer");
 
 const riskBadge = document.getElementById("riskBadge");
 const riskTitle = document.getElementById("riskTitle");
@@ -38,6 +40,30 @@ const sampleAssessment = {
 
 let records = [];
 let editingRecordId = null;
+let recordsLoadState = "idle";
+
+function showToast(message, type = "success") {
+  if (!toastContainer) {
+    if (type === "error") {
+      window.alert(message);
+    }
+    return;
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast is-${type}`;
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+
+  window.setTimeout(() => {
+    toast.classList.add("is-hiding");
+    window.setTimeout(() => toast.remove(), 250);
+  }, 2600);
+}
+
+function setRecordsState(state) {
+  recordsLoadState = state;
+}
 
 function setEditingRecord(recordId) {
   editingRecordId = recordId;
@@ -68,8 +94,18 @@ async function requestJson(url, options = {}) {
 }
 
 async function loadRecords() {
-  records = await requestJson("/records");
+  setRecordsState("loading");
   renderTable();
+
+  try {
+    records = await requestJson("/records");
+    setRecordsState("ready");
+    renderTable();
+  } catch (error) {
+    setRecordsState("error");
+    renderTable();
+    throw error;
+  }
 }
 
 function fillForm(data) {
@@ -306,7 +342,28 @@ function renderStats() {
 }
 
 function renderTable() {
+  if (recordsLoadState === "loading") {
+    recordsTableBody.innerHTML = `
+      <tr class="status-row">
+        <td colspan="8">Loading shared assessments...</td>
+      </tr>
+    `;
+    renderStats();
+    return;
+  }
+
+  if (recordsLoadState === "error") {
+    recordsTableBody.innerHTML = `
+      <tr class="status-row is-error">
+        <td colspan="8">We couldn't load the shared records right now. Please refresh and try again.</td>
+      </tr>
+    `;
+    renderStats();
+    return;
+  }
+
   const query = searchInput.value.trim().toLowerCase();
+  const selectedRisk = riskFilter ? riskFilter.value : "all";
   const filtered = records.filter((record) => {
     const haystack = [
       record.passengerName,
@@ -318,13 +375,22 @@ function renderTable() {
     ]
       .join(" ")
       .toLowerCase();
-    return haystack.includes(query);
+    const matchesQuery = haystack.includes(query);
+    const matchesRisk =
+      selectedRisk === "all" ||
+      String(record.risk).toLowerCase() === selectedRisk;
+    return matchesQuery && matchesRisk;
   });
 
   if (!filtered.length) {
+    const hasActiveFilter = Boolean(query) || selectedRisk !== "all";
     recordsTableBody.innerHTML = `
       <tr class="empty-row">
-        <td colspan="8">No saved assessments yet. Run a prediction to populate this table.</td>
+        <td colspan="8">${
+          hasActiveFilter
+            ? "No assessments match your current search or risk filter."
+            : "No saved assessments yet. Run a prediction to populate this table."
+        }</td>
       </tr>
     `;
     renderStats();
@@ -382,18 +448,20 @@ form.addEventListener("submit", async (event) => {
         method: "PUT",
         body: JSON.stringify(record),
       });
+      showToast("Assessment updated.");
     } else {
       await requestJson("/records", {
         method: "POST",
         body: JSON.stringify(record),
       });
+      showToast("Assessment saved.");
     }
 
     updateSummary(result);
     await loadRecords();
     setEditingRecord(null);
   } catch (error) {
-    window.alert(error.message);
+    showToast(error.message, "error");
   }
 });
 
@@ -412,13 +480,18 @@ clearRecordsBtn.addEventListener("click", async () => {
   try {
     await requestJson("/records", { method: "DELETE" });
     records = [];
+    setRecordsState("ready");
     renderTable();
+    showToast("All shared assessments cleared.");
   } catch (error) {
-    window.alert(error.message);
+    showToast(error.message, "error");
   }
 });
 
 searchInput.addEventListener("input", renderTable);
+if (riskFilter) {
+  riskFilter.addEventListener("change", renderTable);
+}
 
 recordsTableBody.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-action]");
@@ -441,8 +514,9 @@ recordsTableBody.addEventListener("click", async (event) => {
       }
 
       renderTable();
+      showToast("Assessment deleted.");
     } catch (error) {
-      window.alert(error.message);
+      showToast(error.message, "error");
     }
     return;
   }
@@ -451,6 +525,7 @@ recordsTableBody.addEventListener("click", async (event) => {
     const editableData = getEditableData(record);
     fillForm(editableData);
     setEditingRecord(recordId);
+    showToast("Assessment loaded into the form.");
 
     try {
       const previewData = {
@@ -478,5 +553,5 @@ toggleChips.forEach((chip) => {
 });
 
 loadRecords().catch((error) => {
-  window.alert(error.message);
+  showToast(error.message, "error");
 });
