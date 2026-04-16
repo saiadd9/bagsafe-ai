@@ -2,9 +2,13 @@ import os
 import sqlite3
 import uuid
 from flask import Flask, jsonify, render_template, request
+from bagsafe.web_ml import WebRiskPredictor
 
 app = Flask(__name__)
 DATABASE_PATH = os.environ.get("DATABASE_PATH", os.path.join("artifacts", "bagsafe_shared.db"))
+MODEL_PATH = os.environ.get("MODEL_PATH", os.path.join("artifacts", "web_risk_model.joblib"))
+DATASET_PATH = os.environ.get("DATASET_PATH")
+PREDICTOR = WebRiskPredictor(MODEL_PATH, DATASET_PATH)
 RECORD_COLUMNS = {
     "id": "TEXT PRIMARY KEY",
     "passengerName": "TEXT NOT NULL",
@@ -98,6 +102,22 @@ def normalize_record(data, record_id=None):
 def home():
     ensure_db()
     return render_template("index.html")
+
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    payload = request.get_json(force=True)
+    result = PREDICTOR.predict(payload)
+    return jsonify(
+        {
+            "risk": result.risk,
+            "score": result.score,
+            "probability": result.probability,
+            "reasons": result.reasons,
+            "recommendations": result.recommendations,
+            "metrics": PREDICTOR.training_metrics(),
+        }
+    )
 
 
 @app.route("/records", methods=["GET"])

@@ -184,100 +184,10 @@ function validate(data) {
 }
 
 function scoreAssessment(data) {
-  let score = 14;
-  const reasons = [];
-
-  if (data.layoverMinutes < 45) {
-    score += 34;
-    reasons.push("Very short layover leaves little transfer time.");
-  } else if (data.layoverMinutes < 75) {
-    score += 20;
-    reasons.push("Moderate layover needs closer coordination.");
-  } else {
-    reasons.push("Layover duration gives the transfer team more time.");
-  }
-
-  if (data.incomingDelay > 35) {
-    score += 24;
-    reasons.push("Large incoming delay increases missed-connection risk.");
-  } else if (data.incomingDelay > 15) {
-    score += 12;
-    reasons.push("Some incoming delay is already affecting the bag timeline.");
-  }
-
-  if (data.terminalDistance > 1500) {
-    score += 16;
-    reasons.push("Long terminal distance slows baggage movement.");
-  } else if (data.terminalDistance > 900) {
-    score += 9;
-    reasons.push("Terminal distance adds operational pressure.");
-  }
-
-  if (data.transferPoints >= 3) {
-    score += 12;
-    reasons.push("Multiple transfer points add complexity.");
-  } else if (data.transferPoints === 2) {
-    score += 7;
-    reasons.push("A connecting route adds some handling complexity.");
-  }
-
-  if (data.checkedBags >= 3) {
-    score += 6;
-    reasons.push("More checked bags can increase processing time.");
-  }
-
-  if (data.internationalTransfer) {
-    score += 8;
-    reasons.push("International transfer procedures may slow handling.");
-  }
-
-  if (data.baggageType === "fragile") {
-    score += 6;
-    reasons.push("Fragile handling usually requires extra care.");
-  }
-
-  if (data.baggageType === "transfer") {
-    score += 4;
-  }
-
-  if (data.baggageType === "priority" || data.priorityStatus) {
-    score -= 14;
-    reasons.push("Priority handling lowers the transfer failure risk.");
-  }
-
-  score = Math.max(5, Math.min(97, Math.round(score)));
-
-  let risk = "Low";
-  if (score >= 70) {
-    risk = "High";
-  } else if (score >= 42) {
-    risk = "Medium";
-  }
-
-  const recommendations = {
-    Low: [
-      "Proceed with standard baggage transfer workflow.",
-      "Keep this bag in routine monitoring only.",
-      "No urgent intervention is required right now.",
-    ],
-    Medium: [
-      "Flag the bag for transfer desk monitoring.",
-      "Notify the next handling point to expect a tighter connection.",
-      "Keep this bag visible until the transfer is confirmed.",
-    ],
-    High: [
-      "Escalate immediately for manual supervision.",
-      "Prioritize loading coordination with the transfer team.",
-      "Notify supervisors before the bag misses the connection window.",
-    ],
-  };
-
-  return {
-    risk,
-    score,
-    reasons,
-    recommendations: recommendations[risk],
-  };
+  return requestJson("/predict", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 function buildRecord(data, result) {
@@ -433,7 +343,7 @@ form.addEventListener("submit", async (event) => {
   try {
     const data = getFormData();
     validate(data);
-    const result = scoreAssessment(data);
+    const result = await scoreAssessment(data);
     const record = buildRecord(data, result);
 
     if (editingRecordId) {
@@ -527,7 +437,7 @@ recordsTableBody.addEventListener("click", async (event) => {
         checkedBags: Number(editableData.checkedBags),
       };
       validate(previewData);
-      updateSummary(scoreAssessment(previewData));
+      updateSummary(await scoreAssessment(previewData));
     } catch {
     }
   }
