@@ -3,7 +3,6 @@ const fillSampleBtn = document.getElementById("fillSampleBtn");
 const clearBtn = document.getElementById("clearBtn");
 const clearRecordsBtn = document.getElementById("clearRecordsBtn");
 const searchInput = document.getElementById("searchInput");
-const riskFilter = document.getElementById("riskFilter");
 const recordsTableBody = document.getElementById("recordsTableBody");
 const submitBtn = form.querySelector('button[type="submit"]');
 const toastContainer = document.getElementById("toastContainer");
@@ -363,7 +362,6 @@ function renderTable() {
   }
 
   const query = searchInput.value.trim().toLowerCase();
-  const selectedRisk = riskFilter ? riskFilter.value : "all";
   const filtered = records.filter((record) => {
     const haystack = [
       record.passengerName,
@@ -375,20 +373,15 @@ function renderTable() {
     ]
       .join(" ")
       .toLowerCase();
-    const matchesQuery = haystack.includes(query);
-    const matchesRisk =
-      selectedRisk === "all" ||
-      String(record.risk).toLowerCase() === selectedRisk;
-    return matchesQuery && matchesRisk;
+    return haystack.includes(query);
   });
 
   if (!filtered.length) {
-    const hasActiveFilter = Boolean(query) || selectedRisk !== "all";
     recordsTableBody.innerHTML = `
       <tr class="empty-row">
         <td colspan="8">${
-          hasActiveFilter
-            ? "No assessments match your current search or risk filter."
+          query
+            ? "No assessments match your current search."
             : "No saved assessments yet. Run a prediction to populate this table."
         }</td>
       </tr>
@@ -489,9 +482,6 @@ clearRecordsBtn.addEventListener("click", async () => {
 });
 
 searchInput.addEventListener("input", renderTable);
-if (riskFilter) {
-  riskFilter.addEventListener("change", renderTable);
-}
 
 recordsTableBody.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-action]");
