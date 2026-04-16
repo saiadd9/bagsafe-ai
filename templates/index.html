@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BagSafe AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="backdrop backdrop-one"></div>
+      <div class="backdrop backdrop-two"></div>
+      <div class="backdrop backdrop-three"></div>
+
+      <main class="app-layout">
+        <section class="hero-card card">
+          <div class="hero-copy">
+            <p class="eyebrow">ADVANCED WEB-BASED PYTHON PROJECT</p>
+            <h1>BagSafe AI</h1>
+            <p class="hero-text">
+              A baggage transfer risk dashboard for airport staff. Enter transfer details,
+              predict delay risk, and keep a clean record of bags that need attention.
+            </p>
+            <div class="hero-pills">
+              <span>Risk prediction</span>
+              <span>Airport operations</span>
+              <span>Interactive web interface</span>
+            </div>
+          </div>
+
+          <div class="hero-side">
+            <div class="score-orb">
+              <span>Live status</span>
+              <strong id="heroRiskLabel">Ready</strong>
+              <small id="heroRiskHint">Waiting for a new assessment</small>
+            </div>
+            <div class="mini-stats">
+              <article>
+                <span>Assessments</span>
+                <strong id="statsTotal">0</strong>
+              </article>
+              <article>
+                <span>High risk</span>
+                <strong id="statsHigh">0</strong>
+              </article>
+              <article>
+                <span>Average score</span>
+                <strong id="statsAverage">0%</strong>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- palette section removed -->
+
+        <section class="content-grid">
+          <section class="form-card card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Transfer Input</p>
+                <h2>Run a Baggage Assessment</h2>
+              </div>
+              <button id="fillSampleBtn" class="ghost-btn" type="button">Use sample data</button>
+            </div>
+
+            <form id="assessmentForm" class="assessment-form">
+              <label>
+                Passenger name
+                <input name="passengerName" type="text" placeholder="Aisha Rahman" required />
+              </label>
+              <label>
+                Booking reference
+                <input name="bookingReference" type="text" placeholder="BRG472" required />
+              </label>
+              <label>
+                Bag tag
+                <input name="bagTag" type="text" placeholder="BG-1001" required />
+              </label>
+              <label>
+                Flight number
+                <input name="flightNumber" type="text" placeholder="EK211" required />
+              </label>
+              <label>
+                Origin
+                <input name="origin" type="text" placeholder="DXB" required />
+              </label>
+              <label>
+                Destination
+                <input name="destination" type="text" placeholder="LHR" required />
+              </label>
+              <label>
+                Layover minutes
+                <input name="layoverMinutes" type="number" min="1" placeholder="55" required />
+              </label>
+              <label>
+                Transfer points
+                <input name="transferPoints" type="number" min="1" max="4" placeholder="2" required />
+              </label>
+              <label>
+                Terminal distance (m)
+                <input name="terminalDistance" type="number" min="50" placeholder="1200" required />
+              </label>
+              <label>
+                Incoming delay (min)
+                <input name="incomingDelay" type="number" min="0" placeholder="18" required />
+              </label>
+              <label>
+                Checked bags
+                <input name="checkedBags" type="number" min="1" max="6" placeholder="2" required />
+              </label>
+              <label>
+                Baggage type
+                <select name="baggageType">
+                  <option value="transfer">Transfer</option>
+                  <option value="fragile">Fragile</option>
+                  <option value="priority">Priority</option>
+                </select>
+              </label>
+
+              <div class="toggle-row">
+                <label class="toggle-chip" data-toggle-chip>
+                  <input name="priorityStatus" type="checkbox" class="toggle-input" />
+                  <span>Priority status</span>
+                </label>
+                <label class="toggle-chip" data-toggle-chip>
+                  <input name="internationalTransfer" type="checkbox" class="toggle-input" />
+                  <span>International transfer</span>
+                </label>
+              </div>
+
+              <div class="action-row">
+                <button class="primary-btn" type="submit">Predict and save</button>
+                <button id="clearBtn" class="secondary-btn" type="button">Clear form</button>
+              </div>
+
+              <div class="form-note">
+                <strong>Assessment note</strong>
+                <p>Enter the transfer details, run the prediction, and save the result to keep the monitoring log up to date.</p>
+              </div>
+            </form>
+          </section>
+
+          <aside class="summary-column">
+            <section class="result-card card">
+              <p class="eyebrow">Prediction Summary</p>
+              <div id="riskBadge" class="risk-badge neutral">Waiting</div>
+              <h2 id="riskTitle">No assessment yet</h2>
+              <p id="riskScore" class="score-line">Confidence score: 0%</p>
+              <p id="riskReason" class="section-text">
+                Fill in the transfer form to generate a baggage transfer risk prediction.
+              </p>
+            </section>
+
+            <section class="insight-card card">
+              <p class="eyebrow">Operational Guidance</p>
+              <ul id="recommendationList" class="recommendation-list">
+                <li>Use the sample button to load a quick demonstration case.</li>
+                <li>High-risk bags should be escalated for manual attention.</li>
+                <li>Saved records stay in your browser on this device.</li>
+              </ul>
+            </section>
+
+            <section class="insight-card card">
+              <p class="eyebrow">What This Shows</p>
+              <div class="feature-stack">
+                <article>
+                  <strong>OOP concept mapping</strong>
+                  <span>Passenger, bag, route, and prediction logic are represented in the original Python version.</span>
+                </article>
+                <article>
+                  <strong>GUI requirement</strong>
+                  <span>This web version gives you an app-style interface you can open directly in the browser.</span>
+                </article>
+                <article>
+                  <strong>Risk assessment support</strong>
+                  <span>Helps staff quickly identify low, medium, or high baggage transfer risk based on entered travel details.</span>
+                </article>
+              </div>
+            </section>
+          </aside>
+        </section>
+
+        <section class="records-card card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Saved Assessments</p>
+              <h2>Transfer Monitoring Log</h2>
+            </div>
+            <div class="toolbar">
+              <input id="searchInput" type="search" placeholder="Search passenger, flight, tag, or risk..." />
+              <button id="clearRecordsBtn" class="ghost-btn" type="button">Clear all</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Passenger</th>
+                  <th>Flight</th>
+                  <th>Route</th>
+                  <th>Bag</th>
+                  <th>Risk</th>
+                  <th>Score</th>
+                  <th>Saved</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="recordsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+artifacts/bagsafe_model.joblib
+artifacts/bagsafe_records.db
+artifacts/bagsafe_runtime.db
+.venv/
+.vscode/
