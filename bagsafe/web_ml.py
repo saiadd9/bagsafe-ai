@@ -29,6 +29,12 @@ class WebPredictionResult:
     recommendations: list[str]
 
 
+@dataclass(slots=True)
+class RouteFeatureMatch:
+    values: dict[str, float]
+    match_level: str
+
+
 class WebRiskPredictor:
     def __init__(self, model_path: Path, dataset_path: Path | None = None) -> None:
         self.model_path = Path(model_path)
@@ -193,12 +199,13 @@ class WebRiskPredictor:
         metadata: dict[str, object] = bundle["metadata"]  # type: ignore[assignment]
 
         airline_code = self._extract_airline_code(str(payload.get("flightNumber", "")))
-        route_features = self._lookup_route_features(
+        route_match = self._lookup_route_features(
             airline_code=airline_code,
             origin=str(payload.get("origin", "")).upper(),
             destination=str(payload.get("destination", "")).upper(),
             metadata=metadata,
         )
+        route_features = route_match.values
 
         now = datetime.now()
         feature_row = {
@@ -215,17 +222,23 @@ class WebRiskPredictor:
         model_frame = pd.DataFrame([feature_row], columns=metadata["feature_columns"])
         delay_probability = float(pipeline.predict_proba(model_frame)[0][1])
         baggage_pressure = self._baggage_pressure(payload)
-        final_probability = float(np.clip(delay_probability * 0.65 + baggage_pressure * 0.35, 0.02, 0.98))
+        final_probability = self._blend_probability(
+            delay_probability=delay_probability,
+            baggage_pressure=baggage_pressure,
+            match_level=route_match.match_level,
+        )
         score = int(round(final_probability * 100))
 
-        if score >= 70:
-            risk = "High"
-        elif score >= 45:
-            risk = "Medium"
-        else:
-            risk = "Low"
+        risk = self._score_to_risk(score)
 
-        reasons = self._build_reasons(payload, delay_probability, baggage_pressure, route_features, airline_code)
+        reasons = self._build_reasons(
+            payload,
+            delay_probability,
+            baggage_pressure,
+            route_features,
+            airline_code,
+            route_match.match_level,
+        )
         recommendations = {
             "Low": [
                 "Proceed with standard baggage transfer workflow.",
@@ -258,7 +271,7 @@ class WebRiskPredictor:
         origin: str,
         destination: str,
         metadata: dict[str, object],
-    ) -> dict[str, float]:
+    ) -> RouteFeatureMatch:
         route_stats = metadata["route_stats"]
         airline_route_key = f"{airline_code}|{origin}|{destination}"
         route_key = f"{origin}-{destination}"
@@ -266,17 +279,20 @@ class WebRiskPredictor:
 
         airline_route = route_stats["airline_route"].get(airline_route_key)
         if airline_route:
-            return airline_route
+            return RouteFeatureMatch(values=airline_route, match_level="airline_route")
 
         route_only = route_stats["route"].get(route_key)
         if route_only:
-            return route_only
+            return RouteFeatureMatch(values=route_only, match_level="route")
 
-        return {
-            "CRSDepTime": float(defaults["CRSDepTime"]),
-            "Distance": float(defaults["Distance"]),
-            "AirTime": float(defaults["AirTime"]),
-        }
+        return RouteFeatureMatch(
+            values={
+                "CRSDepTime": float(defaults["CRSDepTime"]),
+                "Distance": float(defaults["Distance"]),
+                "AirTime": float(defaults["AirTime"]),
+            },
+            match_level="default",
+        )
 
     def _extract_airline_code(self, flight_number: str) -> str:
         match = re.match(r"([A-Za-z]{2,3})", flight_number.strip().upper())
@@ -315,6 +331,23 @@ class WebRiskPredictor:
 
         return float(np.clip(pressure, 0.0, 1.0))
 
+    def _blend_probability(self, delay_probability: float, baggage_pressure: float, match_level: str) -> float:
+        model_weight = {
+            "airline_route": 0.55,
+            "route": 0.45,
+            "default": 0.30,
+        }.get(match_level, 0.40)
+        pressure_weight = 1.0 - model_weight
+        combined = delay_probability * model_weight + baggage_pressure * pressure_weight
+        return float(np.clip(combined, 0.02, 0.98))
+
+    def _score_to_risk(self, score: int) -> str:
+        if score >= 68:
+            return "High"
+        if score >= 35:
+            return "Medium"
+        return "Low"
+
     def _build_reasons(
         self,
         payload: dict[str, object],
@@ -322,6 +355,7 @@ class WebRiskPredictor:
         baggage_pressure: float,
         route_features: dict[str, float],
         airline_code: str,
+        match_level: str,
     ) -> list[str]:
         reasons: list[str] = []
         origin = str(payload.get("origin", "")).upper()
@@ -344,6 +378,11 @@ class WebRiskPredictor:
         else:
             reasons.append(
                 f"Historical flight data for {origin}-{destination} is relatively stable for this route profile."
+            )
+
+        if match_level == "default":
+            reasons.append(
+                "This route is not in the saved history yet, so the score leans more on live transfer conditions."
             )
 
         if layover < 45:
