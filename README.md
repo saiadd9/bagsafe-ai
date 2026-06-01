@@ -1,6 +1,6 @@
 # BagSafe AI
 
-BagSafe AI is a Python desktop application for predicting baggage transfer failure risk in airport operations. It demonstrates object-oriented design, inheritance and overriding, encapsulation, abstraction, SQLite CRUD operations, and a Tkinter GUI.
+BagSafe AI is a Python web application for predicting baggage transfer failure risk in airport operations. It demonstrates object-oriented design, inheritance and overriding, encapsulation, abstraction, SQLite CRUD operations, and a Tkinter GUI.
 
 ## Features
 
